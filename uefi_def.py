@@ -45,6 +45,18 @@ define for uefi nvram
 ===========================================================================
 """
 """
+#define VARIABLE_DATA                     0x55AA
+
+//
+// Variable Store Header flags
+//
+#define VARIABLE_STORE_FORMATTED          0x5a
+#define VARIABLE_STORE_HEALTHY            0xfe
+"""
+VARIABLE_DATA = 0x55aa
+VARIABLE_STORE_FORMATTED = 0x5a
+VARIABLE_STORE_HEALTHY = 0xfe
+"""
 ///
 /// Variable Store region header.
 ///
@@ -166,6 +178,7 @@ typedef struct {
 } VARIABLE_HEADER;
 """
 class AUTH_VARIABLE_HEADER(ctypes.LittleEndianStructure):
+    _pack_ = 1
     _fields_ = [
         ('StartId',                     uint16_t),
         ('State',                       uint8_t),
@@ -174,7 +187,6 @@ class AUTH_VARIABLE_HEADER(ctypes.LittleEndianStructure):
         ('MonotonicCount',              uint64_t),
         ('TimeStamp',                   efi_time),
         ('PubKeyIndex',                 uint32_t),
-        ('Attributes',                  uint32_t),
         ('NameSize',                    uint32_t),
         ('DataSize',                    uint32_t),
         ('VendorGuid',                  guid_t)

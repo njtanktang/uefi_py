@@ -1,10 +1,8 @@
-#!/usr/bin/env python
 import os
 import sys
 import uuid
 import copy
 import struct
-import argparse
 from uefi_def import *
 from guid import *
 
@@ -22,7 +20,6 @@ class Bios:
             fvh = EFI_FIRMWARE_VOLUME_HEADER.from_buffer(self.biosBuffer, offset)
             if '_FVH' == bytearray.fromhex('%08X' % fvh.Signature)[::-1]:         
                 if Guid(fvh.FileSystemGuid).sGuid() == fvGuid:
-                    print offset
                     return offset
 
 class Fv(Bios):
@@ -31,8 +28,17 @@ class Fv(Bios):
         self.fvGuid = FIRMWARE_VOLUME_GUIDS[fvName]
         self.fvName = fvName
         self.fvOffSetOfBios = Bios.findFvOffset(self, self.fvGuid)
+        self.fvh = EFI_FIRMWARE_VOLUME_HEADER.from_buffer(self.biosBuffer, self.fvOffSetOfBios)
+        self.fvSize = self.fvh.FvLength
+        print (self.fvSize)
+        self.fvBuffer = self.biosBuffer[self.fvOffSetOfBios : self.fvOffSetOfBios+self.fvSize]
 
-        
+    def getFvSize(self):
+        return self.fvSize
+    
+    def getFvName(self):
+        return self.fvName
+
     def fvNvPrase(self):
         pass
 
@@ -41,24 +47,3 @@ class Fv(Bios):
     
     def fvPeiPrase(self):
         pass
-
-def main():
-    parser = argparse.ArgumentParser()
-    subparsers = parser.add_subparsers(title='commands')
-
-    parser_genhdr = subparsers.add_parser('prase',  help='prase uefi bios')
-    parser_genhdr.set_defaults(which='prase')
-    parser_genhdr.add_argument('-f', dest='bin', type=str, help='BIOS binary file path', required = True)
-    args = parser.parse_args()
-    if args.which == 'prase':
-        bios = Fv (args.bin, "NV")
-    else:
-        pass
-
-    print 'Done!'
-    return 0
-
-
-
-if __name__ == '__main__':
-    main()

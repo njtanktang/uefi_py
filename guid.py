@@ -9,7 +9,11 @@ FIRMWARE_VOLUME_GUIDS = {
     "NV":  "fff12b8d-7696-4c8b-a985-2747075b4f50",
 }
 
-
+VARIABLE_SIGN_GUID = {
+    "Variable":        "ddcf3616-3275-4146-98b6-fe85707ffe7d",
+    "Authenticated":    "515fa686-b06e-4550-9112-382bf1067bfb",
+    "Auth_based_time":  "aaf32c78-947b-439a-a180-2e144ec37792",
+}
 
 class Guid:
     
