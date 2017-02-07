@@ -27,7 +27,6 @@ class Variable:
         self.vsSize = vpdSpareSize
         '''we assume none athu variable as default'''
         self.athu = False 
-
         self.vsh = VARIABLE_STORE_HEADER.from_buffer(self.vBuf, self.vpdFvh.HeaderLength)
         if Guid(self.vsh.Signature).sGuid() not in VARIABLE_SIGN_GUID.values():
             print "error signature if variable region"
@@ -36,6 +35,13 @@ class Variable:
             if  Guid(self.vsh.Signature).sGuid() == v:
                 if k != "Variable":
                     self.athu = True
+        '''variable struct >>>>>>'''
+        self.variableName = ""
+        self.variableNameSize = 0
+        self.variableData = []
+        self.variableDataSize = 0
+        self.variableGuid = ""
+        '''variable struct <<<<<<'''
 
     def isValidVariable(self, var):
         '''if start id != 0x55aa, return error'''
@@ -62,7 +68,7 @@ class Variable:
         else:
             return (((~v) + 1) & (alignmemt - 1))
 
-    def printVar(self, varName, varData, varNameSize, varDataSize):
+    def printVar(self, varName, varData, varNameSize, varDataSize, varGuid):
         '''print  variable Name'''
         print "========================Start======================="
         vNameUni = struct.unpack(">%dH"%(varNameSize/2), varName)
@@ -70,6 +76,7 @@ class Variable:
         for s in range(0,len(vNameUni),1):
             vNameAsc.append(chr(vNameUni[s]>>8))
         print "variable Name: %s" % ''.join(vNameAsc)
+        print varGuid
         '''print data vaule'''
         if varDataSize <= 4:
             print "variable data size: 0x%x" % varDataSize
@@ -101,7 +108,12 @@ class Variable:
                     varDataOffSet = varAddr + sizeof(VARIABLE_HEADER) + varNameSize + self.align(1,varNameSize)
                 varName = self.vBuf[varNameOffSet : (varNameOffSet + varNameSize)]
                 varData = self.vBuf[varDataOffSet : (varDataOffSet + varDataSize)]
-                self.printVar(varName, varData, varNameSize, varDataSize)
+                self.variableName = varName
+                self.variableNameSize = varNameSize
+                self.variableData = varData
+                self.variableDataSize = varDataSize
+                self.variableGuid = Guid(var.VendorGuid).sGuid()
+               # self.printVar(varName, varData, varNameSize, varDataSize)
                 return True
             else:
                 return False
@@ -123,20 +135,35 @@ class Variable:
         v += self.align(1, self.dataSizeOfVariable(var))
         return  ((v + 4 - 1) & (~(4 - 1)))
 
-    def findVariableAll(self):
-        if self.athu == True:
-            varAddr = self.vpdFvh.HeaderLength + sizeof(VARIABLE_STORE_HEADER)
-            while  varAddr < self.vSize:
-                self.findVariable(varAddr)
-                varAddr = self.findNextVariable(varAddr)
-                if varAddr == 0:
-                    break
-            
-             
-    
-    def findVariableByName(self, variableName):
-        pass
+    def cmpVarName(self, varName):
+        vNameUni = struct.unpack(">%dH"%(self.variableNameSize/2), self.variableName)
+        vNameAsc = []
+        for s in range(0,len(vNameUni)-1,1):
+            vNameAsc.append(chr(vNameUni[s]>>8))
+        varNameCmp = ''.join(vNameAsc)
+        if varNameCmp == varName:
+            return True
+        else:
+            return False
 
-    def findVariableByNameAndGuid(self, variableName, variableGuid):
-        pass
+    def findVariableAll(self):
+        varAddr = self.vpdFvh.HeaderLength + sizeof(VARIABLE_STORE_HEADER)
+        while  varAddr < self.vSize:
+            if self.findVariable(varAddr):
+                self.printVar(self.variableName, self.variableData, self.variableNameSize, self.variableDataSize,\
+                self.variableGuid)
+            varAddr = self.findNextVariable(varAddr)
+            if varAddr == 0:
+                break
+     
+    def findVariableByName(self, variableName):
+        varAddr = self.vpdFvh.HeaderLength + sizeof(VARIABLE_STORE_HEADER)
+        while  varAddr < self.vSize:
+            if self.findVariable(varAddr):
+                if self.cmpVarName(variableName):
+                    self.printVar(self.variableName, self.variableData, self.variableNameSize, self.variableDataSize,\
+                    self.variableGuid)
+            varAddr = self.findNextVariable(varAddr)
+            if varAddr == 0:
+                break
 
